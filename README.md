@@ -105,12 +105,12 @@ A client that only starts local (stdio) servers can bridge to it with
 
 | Tool                    | Input                                                                                                                                                                                                                 | Returns                                                                                                          |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `search_listings`       | optional `query` (≤100 chars), `category`, `pricing`, `open_source`, `platform`, `limit` (1–50, default 20)                                                                                                           | Live listings, newest first when `query` is omitted, each with `pricing`, `openSource`, `repoUrl` and `platforms` |
+| `search_listings`       | optional `query` (≤100 chars), `category`, `pricing`, `open_source` (`true` only), `platform`, `limit` (1–50, default 20)                                                                                                           | Live listings, newest first when `query` is omitted, each with `attributes`: `pricing`, `openSource`, `repoUrl`, `platforms` (null when unknown) |
 | `get_listing`           | `slug`                                                                                                                                                                                                                | One live listing                                                                                                 |
 | `list_categories`       | –                                                                                                                                                                                                                     | Valid category ids and names for `submit_listing`                                                                |
 | `submit_listing`        | `name` (2–60), `tagline` (5–100), `description` (20–2,000), `url`, `category`, `makerEmail`; optional `logoUrl`, `tags` (up to 5), `pricing`, `openSource`, `repoUrl`, `platforms`                                     | Step 1 of 2. A preview and a `confirmationToken`. Stores and emails nothing                                      |
 | `confirm_submission`    | The same fields plus `confirmationToken` (valid 30 minutes)                                                                                                                                                           | Step 2 of 2. Emails a confirm link to `makerEmail` and returns a submission id that stays pending until clicked  |
-| `get_submission_status` | `id`                                                                                                                                                                                                                  | `pending`, `review`, `live` or `rejected`, with the verification verdict and reasons                             |
+| `get_submission_status` | `id`                                                                                                                                                                                                                  | `pending`, `review` (needs a human look), `live` or `rejected`, with the verification verdict and reasons                             |
 
 `pricing` is one of `free`, `freemium`, `paid`, `free_trial` (paid after a trial). `platform` and
 `platforms` take `web`, `macos`, `windows`, `linux`, `ios`, `android` or `api_cli` (APIs, SDKs and
@@ -125,8 +125,8 @@ CLIs). A listing whose value is unknown never matches a filter. Send `pricing`, 
    Changed fields or an expired token are rejected.
 4. The maker email gets a confirm link that expires after 48 hours. The listing stays pending until
    the maker clicks it. Unconfirmed submissions are rejected.
-5. Each confirmed listing is checked by AI before it goes live. The agent polls
-   `get_submission_status`.
+5. Each confirmed listing is checked by AI before it goes live. One that needs a human look gets
+   the status `review`. The agent polls `get_submission_status`.
 
 ## Limits
 
@@ -135,10 +135,19 @@ Submissions are rate limited per IP address and per email.
 ## Privacy
 
 The server has no authentication and no accounts, and keeps no session between calls. The read
-tools write nothing to the database; each call is counted by tool name, and the query is not
-recorded. `confirm_submission` stores the same fields as the web form, including the maker email,
-which is never published. Anyone who holds a submission id can see its status, verdict and reasons.
-See the [privacy policy](https://makeroo.app/privacy).
+tools (`search_listings`, `get_listing`, `list_categories`, `get_submission_status`) write nothing
+to the database; each call is counted by tool name, and the query is not recorded. Anyone who holds
+a submission id can see its status, verdict and reasons.
+
+`submit_listing` stores and emails nothing. `confirm_submission` stores the same fields as the web
+form, including the maker email, which is never published. Makeroo keeps the maker email until you
+ask for removal. The caller's IP address and the maker email are hashed for rate limits, and those
+counters are deleted after two days. The AI check sends the listing name, tagline, description, URL
+and category, plus text read from the product's site, to Anthropic's Claude Haiku. It never sends
+the maker email. To check a submission Makeroo reads the product's site with a crawler named
+MakerooBot.
+
+See the [privacy policy](https://makeroo.app/privacy) for the full account.
 
 ## Try it
 
@@ -147,7 +156,7 @@ See the [privacy policy](https://makeroo.app/privacy).
 
 > Search Makeroo for free, open-source developer tools.
 
-> Check the status of my Makeroo submission.
+> Check the status of Makeroo submission `<id>`.
 
 ## Support
 
