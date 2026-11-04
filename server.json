@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "app.makeroo/makeroo",
+  "title": "Makeroo",
+  "description": "Search the Makeroo product directory and submit your product from your own agent.",
+  "websiteUrl": "https://makeroo.app/mcp",
+  "version": "0.3.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://makeroo.app/mcp"
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/chocopie8/makeroo-mcp",
+    "source": "github"
+  }
+}
